@@ -1,0 +1,14 @@
+{
+  "name":"WebSocket Library",
+  "require": {
+    "react/event-loop": "^0.4.2",
+    "cboden/Ratchet": "^0.3.5",
+    "psr/log": "^1.0"
+  },
+  "autoload":{
+      "psr-4": {
+          "KodCube\\WebSocket":"KodCube\\WebSocket"
+      }
+  },
+  "bin": ["bin/ws-server"]
+}

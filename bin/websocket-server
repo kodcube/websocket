@@ -1,0 +1,54 @@
+#!/usr/bin/env php
+<?php
+include_once(dirname(__DIR__,4).'/bootstrap.php');
+
+use Ratchet\Server\IoServer;
+use Ratchet\Http\HttpServer;
+use Ratchet\WebSocket\WsServer;
+use KodCube\WebSocket\{ RedisStream, ProxyMessageHandler };
+use Psr\Log\LoggerInterface;
+
+
+// Look for ENV variables to configure this instance
+$pid        = getmypid();
+$port       = $_SERVER['PORT']       ?? 8000;
+
+$logger = $di->get(LoggerInterface::class);
+
+$logger->notice('['.$pid.'] WebSocket Server running on port: '.$port,['pid'=>$pid,'port'=>$port,'requestFrom' => isset($_SERVER['TERM']) ? 'cli' : 'cron']);
+
+@cli_set_process_title('php:ws:server:'.$pid);
+
+// Create WebSocket Listener
+try {
+    $loop = React\EventLoop\Factory::create();
+    $socket = new React\Socket\Server($loop);
+    $socket->listen($port, '0.0.0.0');
+    // Create Web Socket Server
+    $server = new IoServer(
+        new HttpServer(
+            new WsServer(
+                new ProxyMessageHandler(
+                    $loop,
+                    new RedisStream(
+                        $loop,
+                        $_SERVER['REDIS_HOST'] ?? 'localhost',
+                        $_SERVER['REDIS_PORT'] ?? 6379,
+                        $_SERVER['REDIS_DB']   ?? 0
+                    ),
+                    $logger
+                )
+            )
+        ),
+        $socket,
+        $loop
+    );
+    $server->run();
+} catch (Throwable $e) {
+    $logger->critical('Exception occurred in WebSocket Server (' . $e->getMessage() . ')', [
+        'code' => $e->getCode(),
+        'file' => $e->getFile(),
+        'line' => $e->getLine(),
+        'message' => $e->getMessage()
+    ]);
+}
