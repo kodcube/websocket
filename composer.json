@@ -1,5 +1,5 @@
 {
-  "name":"WebSocket Library",
+  "name":"kodcube/websocket",
   "require": {
     "react/event-loop": "^0.4.2",
     "cboden/Ratchet": "^0.3.5",
